@@ -1,0 +1,8 @@
+.env
+build/
+benchmark/results/
+CMakefile/
+.cache/
+.vscode
+CMakeLists.txt
+note.txt

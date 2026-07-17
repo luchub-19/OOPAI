@@ -1,0 +1,10 @@
+[
+  {
+    "id": "task_001",
+    "description": "Don gian: 1 phep nhan qua calculator",
+    "instruction": "Tinh 15 * 17 bang cong cu calculator va cho biet ket qua cuoi cung.",
+    "eval_type": "keyword",
+    "eval_script": "255",
+    "max_steps": 4
+  }
+]
