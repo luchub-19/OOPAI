@@ -39,7 +39,12 @@ namespace fs = std::filesystem;
             // Nhóm skill: Xử lý lỗi (error_recovery.md)
             {"lỗi", "error_recovery"},
             {"error", "error_recovery"},
-            {"fail", "error_recovery"}
+            {"fail", "error_recovery"},
+
+            {"memory","memory"},
+            {"bộ nhớ","memory"},
+            {"kí ức","memory"},
+            {"kiếm lại","memory"}
         };
 
         // 3. Quét prompt xem có chứa dấu hiệu nào không

@@ -6,6 +6,7 @@ void ReActAgentLoop::observe() {
     // Nạp pending_observation (do run() set trước mỗi turn, hoặc do act()
     // để lại từ turn trước) vào lịch sử hội thoại dưới dạng 1 Message thật.
     conversation_history.push_back(Message{"user", pending_observation, {}});
+    // std::cout << "\n\n\n"<< pending_observation  << "\n\n\n";
 }
 
 std::string ReActAgentLoop::think() {
@@ -22,8 +23,8 @@ Step ReActAgentLoop::act() {
     step.tokens_used = last_response.tokens_used;
     step.latency_ms  = last_response.latency_ms;
 
-    static const std::regex done_regex(R"(Final Answer:\s*([^\n\r]+))");
-    static const std::regex tool_regex(R"(Action:\s*([^\n\r]+)\s*[\r\n]+Action Input:\s*([^\n\r]+))");
+    static const std::regex done_regex(R"(Final Answer:\s*([\s\S]+))");
+    static const std::regex tool_regex(R"(Action:\s*([^\n\r]+)\s*[\r\n]+Action Input:\s*([\s\S]+))");
     std::smatch match;
 
     if (std::regex_search(thought, match, done_regex)) {

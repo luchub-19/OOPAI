@@ -54,7 +54,8 @@ std::string AgentLoop::buildSystemPrompt(const Task& task) const {
 
         "# STARK REMINDERS\n"
         "1. NO MARKDOWN for keywords.\n"
-        "2. Output EXACTLY ONE 'Action:' per turn if using a tool.";
+        "2. Output EXACTLY ONE 'Action:' per turn if using a tool."
+        "3. If no specific tool is explicitly requested, you are expected to deduce the most suitable tools from your available toolset based on the context of the problem.";
 }
 
 // =====================================================================
@@ -96,7 +97,9 @@ Trajectory AgentLoop::run(const Task& task) {
         current_step++;
         std::cout << "\n[TURN " << current_step << "/" << task.max_steps << "]\n";
 
-        observe();                       // (1) nạp pending_observation vào history
+        if(current_step != 1){ // không goi observe cho step 1  
+            observe();                       // (1) nạp pending_observation vào history
+        }
         std::string thought = think();   // (2) gọi LLM -> cập nhật last_response
         // std::cout << " ==== debug ====" << std::endl;
         // std::cout << conversation_history[conversation_history.size()-1].role + " " + conversation_history[conversation_history.size()-1].content << std::endl;

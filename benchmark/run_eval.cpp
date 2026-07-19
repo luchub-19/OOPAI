@@ -58,12 +58,13 @@
 #include "src/tools/tool_registry.h"
 #include "src/tools/calculator_tool.h"
 // TODO(khi hoan thien): them include cac tool con lai o day, VD:
-// #include "src/tools/exec_tool.h"
+#include "src/tools/exec_tool.h"
 // #include "src/tools/file_tool.h"
 // #include "src/tools/web_tool.h"
-// #include "src/tools/memory_tool.h"
+#include "src/tools/memory_tool.h"
 
 #include "src/client/ollama_client.h"
+#include "src/client/colab_client.h"
 #include "src/agent/react_agent_loop.h"
 #include "src/agent/skill_loader.h"
 #include "src/agent/loop_detector.h"
@@ -81,10 +82,10 @@ namespace {
 struct CliOptions {
     std::string tasks_path = "benchmark/tasks.json";
     std::string out_dir    = "benchmark/results";
-    std::string base_url   = "http://localhost:11434";
+    std::string base_url   = "http://localhost:11434"; //http://localhost:11434
     std::string model      = "gemma4:e4b"; // qwen3-vl:8b 
     float       temperature = 0.0f;
-    int         max_tokens  = 512;
+    int         max_tokens  = 2048; // để cao 1 tí (tại nó đang tạo thì bị ngắt) = trước đó là 512 -> ko đủ tokens
     std::string env_mode    = "sandbox"; // "native" | "sandbox"
     std::vector<std::string> allowed_tools; // rong = cho phep tat ca tool da dang ky
 };
@@ -191,30 +192,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     std::cout << "[run_eval] Da nap " << tasks.size() << " task tu " << opt.tasks_path << "\n";
-
-    // === 2. Tool registry ===
-    // Hien tai chi CalculatorTool hoan thien. Xem TODO o dau file de
-    // biet cach them tool moi khi exec/file/web/memory tool xong.
-    auto tools = std::make_shared<ToolRegistry>();
-    tools->registerTool(std::make_unique<CalculatorTool>());
-    if (!opt.allowed_tools.empty()) {
-        tools->setAllowedTools(opt.allowed_tools);
-    }
-
-    // === 3. LLM client cho agent ===
-    auto llm = std::make_unique<OllamaClient>(opt.base_url, opt.model, opt.temperature, opt.max_tokens);
-
-    // === 4. Skill loader (skills/*.md se duoc inject vao system prompt) ===
-    auto skills = std::make_unique<SkillLoader>("skills");
-    skills->loadSkillsFromDisk();
-
-    // === 5. Loop detector: canh bao sau 2 lan lap, dung han sau 3 lan ===
-    auto loop_detector = std::make_unique<LoopDetector>(2, 3);
-
-    // === 6. Agent loop (ReAct text-only) ===
-    ReActAgentLoop agent(std::move(llm), tools, std::move(skills), std::move(loop_detector));
-
-    // === 7. Environment ===
+    
+    // === 2. Environment ===
     // Mac dinh dung SandboxEnvironment (thu muc /tmp/ai_agent_bench_XXXXXX,
     // co lap, tu xoa sau moi task) dung tinh than benchmark khong de lai
     // side-effect. Co the doi sang NativeEnvironment bang --env=native
@@ -225,6 +204,34 @@ int main(int argc, char** argv) {
     } else {
         env = std::make_unique<SandboxEnvironment>("ai_agent_bench_");
     }
+
+    // === 3. Tool registry ===
+    // Hien tai chi CalculatorTool hoan thien. Xem TODO o dau file de
+    // biet cach them tool moi khi exec/file/web/memory tool xong.
+
+    // std::string path_of_env = env->getWorkspace(); 
+
+    auto tools = std::make_shared<ToolRegistry>();
+    tools->registerTool(std::make_unique<CalculatorTool>());
+    tools->registerTool(std::make_unique<MemoryTool>());
+    tools->registerTool(std::make_unique<ExecTool>([&env]() { return env->getWorkspace(); },2,false));
+    if (!opt.allowed_tools.empty()) {
+        tools->setAllowedTools(opt.allowed_tools);
+    }
+
+    // === 4. LLM client cho agent ===
+    auto llm = std::make_unique<OllamaClient>(opt.base_url, opt.model, opt.temperature, opt.max_tokens);
+
+    // === 5. Skill loader (skills/*.md se duoc inject vao system prompt) ===
+    auto skills = std::make_unique<SkillLoader>("skills");
+    skills->loadSkillsFromDisk();
+
+    // === 6. Loop detector: canh bao sau 2 lan lap, dung han sau 3 lan ===
+    auto loop_detector = std::make_unique<LoopDetector>(2, 3);
+
+    // === 7. Agent loop (ReAct text-only) ===
+    ReActAgentLoop agent(std::move(llm), tools, std::move(skills), std::move(loop_detector));
+
 
     // === 8. HarnessRunner + dang ky evaluator theo eval_type ===
     HarnessRunner harness(std::move(env));

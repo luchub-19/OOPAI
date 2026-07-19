@@ -10,6 +10,8 @@ public:
     virtual ~Environment() = default;
     virtual void setup()    = 0;   // Gọi trước khi agent bắt đầu chạy
     virtual void teardown() = 0;   // Gọi sau khi eval xong để dọn dẹp
+
+    const virtual std::string& getWorkspace() const = 0;
 };
 
 // ── NativeEnvironment ─────────────────────────────────────────
@@ -22,7 +24,7 @@ public:
     explicit NativeEnvironment(const std::string& dir = "agent_workspace");
     void setup()    override;
     void teardown() override;
-    const std::string& workDir() const { return work_dir_; }
+    const std::string& getWorkspace() const override { return work_dir_; }
 };
 
 // ── SandboxEnvironment ────────────────────────────────────────
@@ -36,5 +38,5 @@ public:
     explicit SandboxEnvironment(const std::string& prefix = "ai_agent_");
     void setup()    override;
     void teardown() override;
-    const std::string& sandboxDir() const { return sandbox_dir_; }
+    const std::string& getWorkspace() const override { return sandbox_dir_; }
 };

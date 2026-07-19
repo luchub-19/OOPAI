@@ -1,10 +1,10 @@
 [
   {
-    "id": "task_001",
-    "description": "Don gian: 1 phep nhan qua calculator",
-    "instruction": "Tinh 15 * 17 bang cong cu calculator va cho biet ket qua cuoi cung.",
+    "id": "task_006",
+    "description": "kiểm tra khả năng dùng đúng tool",
+    "instruction": "bạn hãy viết một bài thơ rồi đưa nội dung vào thư muc result (dungf exec tool)",
     "eval_type": "keyword",
-    "eval_script": "255",
-    "max_steps": 4
+    "eval_script": "Oop",
+    "max_steps": 7
   }
 ]

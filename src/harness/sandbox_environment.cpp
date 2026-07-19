@@ -1,4 +1,4 @@
-#include "environment.h"
+#include "environment.h" // Tùy vào tên file header thực tế của bạn
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -13,8 +13,14 @@ SandboxEnvironment::SandboxEnvironment(const std::string& prefix)
     : prefix_(prefix) {}
 
 void SandboxEnvironment::setup() {
-    // mkdtemp yêu cầu template kết thúc bằng "XXXXXX"
-    std::string tmpl = (fs::temp_directory_path() / (prefix_ + "XXXXXX")).string();
+    // 1. Kéo về thư mục project hiện tại, gom vào thư mục con "workspaces" cho gọn
+    fs::path base_dir = fs::current_path() / "workspaces";
+    if (!fs::exists(base_dir)) {
+        fs::create_directories(base_dir);
+    }
+
+    // 2. Tạo template với XXXXXX bên trong project
+    std::string tmpl = (base_dir / (prefix_ + "XXXXXX")).string();
 
     std::vector<char> buf(tmpl.begin(), tmpl.end());
     buf.push_back('\0');
@@ -26,10 +32,11 @@ void SandboxEnvironment::setup() {
 
     sandbox_dir_ = buf.data();
     active_      = true;
-    std::cout << "[SandboxEnv] Isolated sandbox created: " << sandbox_dir_ << "\n";
+    std::cout << "[SandboxEnv] Isolated sandbox created in project: " << sandbox_dir_ << "\n";
 }
 
 void SandboxEnvironment::teardown() {
+    // Sandbox giữ nguyên đặc tính: Dọn dẹp sạch sẽ sau khi dùng xong
     if (active_ && fs::exists(sandbox_dir_)) {
         fs::remove_all(sandbox_dir_);
         active_ = false;
