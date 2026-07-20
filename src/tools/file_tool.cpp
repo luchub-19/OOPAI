@@ -237,6 +237,23 @@ std::optional<std::string> FileTool::execute(const std::string& args) {
         } else if (action == "list") {
             return doList(*safe_path);
         } else if (action == "delete") {
+            // [SỬA - Bug C]: truoc day resolveSafePath() coi path="."
+            // (hoac "" hoac bat ky bien the nao chuan hoa ve dung root) la
+            // HOP LE (candidate == root), nen {"action":"delete","path":"."}
+            // xoa sach toan bo thu muc workspace goc bang fs::remove_all().
+            // Voi SandboxEnvironment con do (mkdtemp tao lai o task sau),
+            // nhung voi NativeEnvironment (thu muc co dinh, khong tu tao
+            // lai) thi moi FileTool call tiep theo trong CUNG task se fail
+            // vi "workspace root khong hop le". Chan rieng truong hop nay:
+            // khong cho phep target trung voi chinh workspace root.
+            std::error_code ec_cmp;
+            fs::path root_canonical = fs::weakly_canonical(root, ec_cmp);
+            if (!ec_cmp && fs::weakly_canonical(*safe_path, ec_cmp) == root_canonical && !ec_cmp) {
+                return std::string(
+                    "Loi: khong duoc phep xoa chinh workspace root. "
+                    "Neu muon don sach workspace, hay 'list' roi 'delete' "
+                    "tung file/thu muc con cu the.");
+            }
             return doDelete(*safe_path);
         } else if (action == "mkdir") {
             return doMkdir(*safe_path);

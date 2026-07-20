@@ -14,7 +14,11 @@ std::string Trajectory::exportToJson() const {
                 {"tool", s.tool_name},
                 {"args", s.tool_args}
             }},
-            {"tool_result", s.tool_result},   // [SỬA]: "tool result" (có khoảng trắng) -> "tool_result"
+            // [SỬA]: nlohmann::json không có to_json built-in cho std::optional<T>,
+            // truyền thẳng s.tool_result (std::optional<std::string>) vào
+            // initializer_list_t làm push_back() fail overload resolution toàn
+            // bộ object -> phải tự chuyển optional -> json null/value ở đây.
+            {"tool_result", s.tool_result ? json(*s.tool_result) : json(nullptr)},
             {"tokens_used", s.tokens_used},
             {"latency_ms", s.latency_ms}
         });

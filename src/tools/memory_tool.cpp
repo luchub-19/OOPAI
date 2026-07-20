@@ -84,6 +84,17 @@ std::optional<std::string> MemoryTool::execute(const std::string& args) {
             return "Lỗi: Tham số JSON thiếu 'action' hoặc 'data'.";
         }
 
+        // [SỬA - Bug A]: truoc gan thang `std::string action = j["action"];`
+        // -> neu LLM sinh "action"/"data" khong phai string (so, null, bool,
+        // mang...) thi phep gan nay nem json::type_error, ma catch ben duoi
+        // CHI bat json::parse_error -> exception thoat thang len
+        // HarnessRunner, lam ca task bi tinh la "agent_crashed" thay vi chi
+        // tra 1 dong loi cho agent thu lai. Kiem tra kieu tuong minh truoc
+        // khi gan de tranh throw, tra loi ro rang cho LLM tu sua.
+        if (!j["action"].is_string() || !j["data"].is_string()) {
+            return "Lỗi: 'action' và 'data' phải là kiểu string.";
+        }
+
         std::string action = j["action"];
         std::string data = j["data"];
 
@@ -95,9 +106,12 @@ std::optional<std::string> MemoryTool::execute(const std::string& args) {
             return "Lỗi: 'action' chỉ được là 'save' hoặc 'search'.";
         }
 
-    } catch (const json::parse_error& e) {
-        // Xử lý lỗi ngoại lệ khi LLM sinh JSON sai định dạng
-        return std::string("Lỗi Parse JSON: ") + e.what();
+    } catch (const json::exception& e) {
+        // [SỬA - Bug A]: bat rong json::exception (lop co so cua ca
+        // parse_error lan type_error/out_of_range...) thay vi chi
+        // parse_error, phong truong hop con sot loi kieu du lieu nao khac
+        // ma kiem tra tuong minh o tren chua luong het.
+        return std::string("Lỗi xử lý JSON: ") + e.what();
     }
 }
 

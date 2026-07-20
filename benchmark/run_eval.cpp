@@ -209,12 +209,23 @@ int main(int argc, char** argv) {
     // Hien tai chi CalculatorTool hoan thien. Xem TODO o dau file de
     // biet cach them tool moi khi exec/file/web/memory tool xong.
 
-    // std::string path_of_env = env->getWorkspace(); 
+    // [SUA - BUG #2]: truoc lay [&env] (capture REFERENCE toi bien local
+    // `env`). Ben duoi, `HarnessRunner harness(std::move(env));` move
+    // unique_ptr do di -> bien `env` local thanh nullptr. Khi agent chay
+    // va ExecTool goi path_provider_(), lambda doc lai bien `env` (gio la
+    // null) -> env->getWorkspace() dereference nullptr -> segfault, va
+    // crash lai xay ra dung o loi goi Environment::getWorkspace() nen de
+    // nham la bug cua environment.cpp.
+    // Fix: lay RAW POINTER toi object ma unique_ptr dang quan ly TRUOC KHI
+    // move. std::move() chi chuyen quyen so huu, KHONG doi cho object that
+    // su (van song, gio do `harness` giu) -> env_ptr van hop le suot vong
+    // doi cua harness, tuc la suot runBatch().
+    Environment* env_ptr = env.get();
 
     auto tools = std::make_shared<ToolRegistry>();
     tools->registerTool(std::make_unique<CalculatorTool>());
     tools->registerTool(std::make_unique<MemoryTool>());
-    tools->registerTool(std::make_unique<ExecTool>([&env]() { return env->getWorkspace(); },2,false));
+    tools->registerTool(std::make_unique<ExecTool>([env_ptr]() { return env_ptr->getWorkspace(); },2,false));
     if (!opt.allowed_tools.empty()) {
         tools->setAllowedTools(opt.allowed_tools);
     }

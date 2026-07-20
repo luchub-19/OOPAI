@@ -78,22 +78,41 @@ std::optional<std::string> WebSearchTool::formatResults(const std::string& raw_j
         return std::string("Khong tim thay ket qua nao.");
     }
 
-    std::ostringstream oss;
-    int count = 0;
-    for (const auto& item : results) {
-        if (count >= num_results) break;
+    // [SỬA - Bug B]: toan bo vong lap ben duoi truoc day KHONG duoc bao boc
+    // try/catch nao. item.value("title", "...") nem json::type_error neu
+    // SearXNG (nguon NGOAI, khong kiem soat duoc) tra ve field co kieu
+    // khac string (vi du "title": 12345). Loi nay se thoat thang len
+    // WebSearchTool::execute() (cung khong bat) roi len toi
+    // HarnessRunner, lam crash ca task chi vi 1 response bat thuong tu
+    // dich vu ben ngoai. Gio bat rong json::exception quanh toan bo qua
+    // trinh doc field, dong thoi kiem tra kieu tuong minh de bo qua rieng
+    // tung item loi thay vi huy toan bo ket qua tim kiem.
+    try {
+        std::ostringstream oss;
+        int count = 0;
+        for (const auto& item : results) {
+            if (count >= num_results) break;
 
-        std::string title = item.value("title", "(khong co tieu de)");
-        std::string url = item.value("url", "");
-        std::string content = item.value("content", "(khong co mo ta)");
+            std::string title = (item.contains("title") && item["title"].is_string())
+                                     ? item["title"].get<std::string>()
+                                     : "(khong co tieu de)";
+            std::string url = (item.contains("url") && item["url"].is_string())
+                                   ? item["url"].get<std::string>()
+                                   : "";
+            std::string content = (item.contains("content") && item["content"].is_string())
+                                       ? item["content"].get<std::string>()
+                                       : "(khong co mo ta)";
 
-        oss << (count + 1) << ". " << title << "\n";
-        oss << "   URL: " << url << "\n";
-        oss << "   Noi dung: " << content << "\n\n";
-        ++count;
+            oss << (count + 1) << ". " << title << "\n";
+            oss << "   URL: " << url << "\n";
+            oss << "   Noi dung: " << content << "\n\n";
+            ++count;
+        }
+
+        return oss.str();
+    } catch (const json::exception& e) {
+        return std::string("Loi doc du lieu ket qua tu SearXNG: ") + e.what();
     }
-
-    return oss.str();
 }
 
 std::optional<std::string> WebSearchTool::execute(const std::string& args) {
